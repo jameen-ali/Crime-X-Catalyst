@@ -1,0 +1,7 @@
+{
+  "name": "crime-x",
+  "version": "0.0.0",
+  "homepage": "index.html",
+  "login_redirect": "index.html",
+  "404": "index.html"
+}

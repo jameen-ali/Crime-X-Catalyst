@@ -1,0 +1,594 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Premium Dual-Theme System ────────────────────────────────────────── */
+:root {
+  --bg:           #2D3250; /* Primary Background */
+  --surface-2:    #424769; /* Secondary Background */
+  --sidebar-bg:   #2D3250; /* Sidebar Background */
+  --navbar-bg:    #2D3250; /* Navbar Background */
+  --surface:      #424769; /* Card Background */
+  --hover:        #50567D; /* Card Hover */
+  --accent:       #F6B17A; /* Primary Accent */
+  --accent-2:     #FFFFFF; /* Secondary Accent */
+  --text:         #FFFFFF; /* Primary Text */
+  --text-muted:   #C9CBD7; /* Secondary Text */
+  --border:       rgba(255, 255, 255, 0.08); /* Border */
+  --success:      #4ADE80;
+  --warning:      #FACC15;
+  --danger:       #EF4444;
+  --info:         #60A5FA;
+  
+  --button-text:  #1F2937;
+  --accent-hover: #F8C299;
+  
+  /* RGB Components for opacity/rgba usage */
+  --info-rgb:     96, 165, 250;
+  --success-rgb:  74, 222, 128;
+  --warning-rgb:  250, 204, 21;
+  --danger-rgb:   239, 68, 68;
+  --accent-rgb:   246, 177, 122;
+  --border-rgb:   255, 255, 255;
+}
+
+.light {
+  --bg:           #F8FAFC; /* Primary Background */
+  --surface-2:    #EEF2F7; /* Secondary Background */
+  --sidebar-bg:   #FFFFFF; /* Sidebar Background */
+  --navbar-bg:    #FFFFFF; /* Navbar Background */
+  --surface:      #FFFFFF; /* Card Background */
+  --hover:        #F4F6FB; /* Card Hover */
+  --accent:       #F6B17A; /* Primary Accent */
+  --accent-2:     #424769; /* Secondary Accent */
+  --text:         #1F2937; /* Primary Text */
+  --text-muted:   #6B7280; /* Secondary Text */
+  --border:       #E5E7EB; /* Border */
+  --success:      #22C55E;
+  --warning:      #FACC15;
+  --danger:       #EF4444;
+  --info:         #3B82F6;
+  
+  --button-text:  #1F2937;
+  --accent-hover: #E39C62;
+  
+  /* RGB Components for opacity/rgba usage */
+  --info-rgb:     59, 130, 246;
+  --success-rgb:  34, 197, 94;
+  --warning-rgb:  250, 204, 21;
+  --danger-rgb:   239, 68, 68;
+  --accent-rgb:   246, 177, 122;
+  --border-rgb:   229, 231, 235;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Raleway', 'Inter', system-ui, -apple-system, sans-serif !important;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  letter-spacing: -0.01em;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ── Custom Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ── Browser Autofill Overrides for Dark Inputs ── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active,
+input:-internal-autofill-selected,
+select:-internal-autofill-selected {
+  -webkit-box-shadow: 0 0 0 1000px #121d30 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: 0 0 0 1000px #121d30 inset !important;
+  caret-color: #ffffff !important;
+  transition: background-color 50000s ease-in-out 0s !important;
+  padding-left: 44px !important;
+}
+
+.login-input {
+  padding-left: 44px !important;
+  background-color: #121d30 !important;
+  color: #ffffff !important;
+}
+
+/* ── Typography Overrides (Inspried by design spec) ──────────────────── */
+h1, .text-2xl.font-bold, .text-3xl {
+  font-family: 'Raleway', sans-serif !important;
+  font-size: 32px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.25 !important;
+}
+
+h2, .text-lg.font-bold, .text-xl {
+  font-family: 'Raleway', sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.35 !important;
+}
+
+h3, .text-sm.font-semibold, .text-base.font-semibold {
+  font-family: 'Raleway', sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
+}
+
+.text-sm {
+  font-size: 14px !important;
+}
+
+.text-xs, .text-\[10px\] {
+  font-size: 12px !important;
+  letter-spacing: -0.005em !important;
+}
+
+/* ── Glass Card (Theme-Adaptive & Rounded 20px) ─────────────────────── */
+.glass {
+  background: var(--surface) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08) !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+              background-color 0.3s ease, border-color 0.3s ease !important;
+}
+
+.light .glass {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.02), 0 1px 2px 0 rgba(0, 0, 0, 0.01) !important;
+}
+
+.glass-hover {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.3s ease !important;
+}
+.glass-hover:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 40px rgba(var(--accent-rgb), 0.15) !important;
+  border-color: rgba(var(--accent-rgb), 0.3) !important;
+}
+
+/* ── Buttons (Rounded 12px & Theme Adaptive) ────────────────────────── */
+button, .btn {
+  border-radius: 12px !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Gradient Primary Button */
+.btn-primary, .bg-blue-500, .bg-blue-600 {
+  background: var(--accent) !important;
+  color: var(--button-text) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.25) !important;
+  font-weight: 600 !important;
+}
+.btn-primary:hover, .bg-blue-500:hover, .bg-blue-600:hover, .hover\:bg-blue-500:hover {
+  background: var(--accent-hover) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.35) !important;
+}
+.btn-primary:active, .bg-blue-500:active, .bg-blue-600:active {
+  transform: translateY(0) !important;
+}
+
+/* Secondary Button / Outlined Style */
+.btn-secondary, .border-border, .border-\[\#1F2D40\], .border-white\/10 {
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* ── Forms / Inputs (Rounded 12px) ──────────────────────────────────── */
+input[type="text"], input[type="password"], input[type="email"], input[type="search"], select, textarea {
+  border-radius: 12px !important;
+  background-color: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  padding: 10px 14px !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  outline: none !important;
+}
+
+input.pl-9, .pl-9 {
+  padding-left: 2.25rem !important;
+}
+input.pr-9, .pr-9 {
+  padding-right: 2.25rem !important;
+}
+input.pl-10, .pl-10 {
+  padding-left: 2.5rem !important;
+}
+input.pr-10, .pr-10 {
+  padding-right: 2.5rem !important;
+}
+
+.light input[type="text"], .light input[type="password"], .light input[type="email"], .light input[type="search"], .light select, .light textarea {
+  background-color: var(--surface-2) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  background-color: var(--surface) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.15) !important;
+  transform: translateY(-1px);
+}
+
+.light input:focus, .light select:focus, .light textarea:focus {
+  background-color: var(--surface) !important;
+}
+
+/* ── Tables (Modern Enterprise Table) ───────────────────────────────── */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+}
+
+thead th {
+  background: var(--surface-2) !important;
+  backdrop-filter: blur(10px);
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  font-size: 11px !important;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 14px 16px !important;
+}
+
+tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 16px;
+}
+tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 16px;
+}
+
+tbody td {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  vertical-align: middle;
+}
+
+tbody tr:hover, .table-row-hover:hover {
+  background-color: var(--hover) !important;
+}
+
+/* Striped rows */
+tbody tr:nth-child(even) {
+  background-color: rgba(var(--border-rgb), 0.02);
+}
+
+/* ── Modals (Rounded, Glass Effect) ─────────────────────────────────── */
+[role="dialog"], .modal, .fixed.inset-0.z-50 {
+  backdrop-filter: blur(12px) !important;
+}
+
+[role="dialog"] > div, .modal-content {
+  background: var(--surface) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
+  animation: modalEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalEnter {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Skeleton Loader ─────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, rgba(var(--border-rgb), 0.05) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}
+
+/* ── Animated counter ───────────────────────────────────────────────── */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.count-anim { animation: countUp 0.6s ease-out forwards; }
+
+/* ── Glow Accents ───────────────────────────────────────────────────── */
+.glow-blue  { box-shadow: 0 0 20px rgba(var(--info-rgb), 0.25); }
+.glow-green { box-shadow: 0 0 20px rgba(var(--success-rgb), 0.25); }
+.glow-red   { box-shadow: 0 0 20px rgba(var(--danger-rgb), 0.25); }
+
+/* ── Typing dots ─────────────────────────────────────────────────────── */
+.typing-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: typing 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
+
+/* ── Leaflet Map Customization (Modern glass popup & rounded controls) ── */
+.leaflet-container {
+  background: var(--surface-2) !important;
+  border-radius: 20px !important;
+  border: 1px solid var(--border) !important;
+}
+.leaflet-bar {
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+.leaflet-bar a {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.leaflet-bar a:hover {
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
+}
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.leaflet-popup-tip {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* ── Status badges (Theme-Responsive Styling) ───────────────────────── */
+.badge-critical { background: rgba(var(--danger-rgb), 0.15) !important;  color: var(--danger) !important; border: 1px solid rgba(var(--danger-rgb), 0.3) !important; }
+.badge-high     { background: rgba(var(--warning-rgb), 0.15) !important; color: var(--warning) !important; border: 1px solid rgba(var(--warning-rgb), 0.3) !important; }
+.badge-medium   { background: rgba(var(--info-rgb), 0.15) !important;  color: var(--info) !important; border: 1px solid rgba(var(--info-rgb), 0.3) !important; }
+.badge-low      { background: rgba(var(--success-rgb), 0.15) !important;  color: var(--success) !important; border: 1px solid rgba(var(--success-rgb), 0.3) !important; }
+
+/* ── Sidebar transition ──────────────────────────────────────────────── */
+.sidebar-transition { transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* ── Chart tooltip premium ─────────────────────────────────────────── */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--surface) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  color: var(--text) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ── Recharts Custom SVG Styling ────────────────────────────────────── */
+.recharts-cartesian-grid-horizontal line, 
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--border) !important;
+  opacity: 0.4;
+}
+.recharts-legend-item-text {
+  color: var(--text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 500;
+}
+.recharts-text {
+  fill: var(--text-muted) !important;
+}
+
+/* ── Pulse dot ───────────────────────────────────────────────────────── */
+.pulse-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(var(--success-rgb), 0.4); }
+  50%       { opacity: 0.8; box-shadow: 0 0 0 6px rgba(var(--success-rgb), 0); }
+}
+
+/* ── Notification badge ─────────────────────────────────────────────── */
+.notif-badge {
+  position: absolute;
+  top: -4px; right: -4px;
+  min-width: 16px; height: 16px;
+  background: var(--danger);
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 3px;
+  color: white;
+}
+
+/* ── Theme color mappings (Hardcoded overrides) ────────────────────── */
+.bg-\[\#08111F\]      { background-color: var(--bg) !important; }
+.bg-\[\#0d1b2a\]      { background-color: var(--surface-2) !important; }
+.bg-\[\#111827\]      { background-color: var(--surface) !important; }
+.bg-\[\#1a2435\]      { background-color: var(--surface-2) !important; }
+.bg-\[\#111827\]\/90  { background-color: var(--surface) !important; backdrop-filter: blur(20px) !important; }
+
+.border-\[\#1F2D40\]  { border-color: var(--border) !important; }
+.border-white\/10     { border-color: var(--border) !important; }
+
+.text-white           { color: var(--text) !important; }
+.text-gray-200        { color: var(--text) !important; }
+.text-gray-300        { color: var(--text-muted) !important; }
+.text-gray-400        { color: var(--text-muted) !important; }
+.text-gray-500        { color: var(--text-muted) !important; }
+.placeholder-gray-500::placeholder { color: var(--text-muted) !important; }
+
+/* State and Accent Overrides */
+.text-blue-400        { color: var(--accent) !important; }
+.text-blue-500        { color: var(--accent) !important; }
+.bg-blue-500          { background-color: var(--accent) !important; }
+.bg-blue-500\/15       { background-color: rgba(var(--accent-rgb), 0.12) !important; }
+.bg-blue-500\/20       { background-color: rgba(var(--accent-rgb), 0.18) !important; }
+.border-blue-500\/20   { border-color: rgba(var(--accent-rgb), 0.2) !important; }
+.border-blue-500\/30   { border-color: rgba(var(--accent-rgb), 0.3) !important; }
+
+.text-green-400       { color: var(--success) !important; }
+.text-green-500       { color: var(--success) !important; }
+.bg-green-500         { background-color: var(--success) !important; }
+.bg-green-500\/15      { background-color: rgba(var(--success-rgb), 0.12) !important; }
+.bg-green-500\/20      { background-color: rgba(var(--success-rgb), 0.18) !important; }
+.border-green-500\/20  { border-color: rgba(var(--success-rgb), 0.2) !important; }
+.border-green-500\/30  { border-color: rgba(var(--success-rgb), 0.3) !important; }
+
+.text-red-400         { color: var(--danger) !important; }
+.text-red-500         { color: var(--danger) !important; }
+.bg-red-500           { background-color: var(--danger) !important; }
+.bg-red-500\/5        { background-color: rgba(var(--danger-rgb), 0.05) !important; }
+.bg-red-500\/15       { background-color: rgba(var(--danger-rgb), 0.12) !important; }
+.bg-red-500\/20       { background-color: rgba(var(--danger-rgb), 0.18) !important; }
+.border-red-500\/20   { border-color: rgba(var(--danger-rgb), 0.2) !important; }
+.border-red-500\/30   { border-color: rgba(var(--danger-rgb), 0.3) !important; }
+
+.text-amber-400       { color: var(--warning) !important; }
+.text-amber-500       { color: var(--warning) !important; }
+.bg-amber-500         { background-color: var(--warning) !important; }
+.bg-amber-500\/15      { background-color: rgba(var(--warning-rgb), 0.12) !important; }
+.bg-amber-500\/20      { background-color: rgba(var(--warning-rgb), 0.18) !important; }
+.border-amber-500\/20  { border-color: rgba(var(--warning-rgb), 0.2) !important; }
+.border-amber-500\/30  { border-color: rgba(var(--warning-rgb), 0.3) !important; }
+
+.text-purple-400      { color: var(--accent-2) !important; }
+.text-purple-500      { color: var(--accent-2) !important; }
+.bg-purple-500        { background-color: var(--accent-2) !important; }
+.bg-purple-500\/15     { background-color: rgba(255, 255, 255, 0.12) !important; }
+.bg-purple-500\/20     { background-color: rgba(255, 255, 255, 0.18) !important; }
+.border-purple-500\/20 { border-color: rgba(255, 255, 255, 0.2) !important; }
+.border-purple-500\/30 { border-color: rgba(255, 255, 255, 0.3) !important; }
+
+/* Highlight matched search text */
+mark.search-hl {
+  background: rgba(var(--accent-rgb), 0.3);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* Theme transition */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+.no-transition, .no-transition * {
+  transition: none !important;
+}
+
+/* ── Custom Leaflet Map Marker Styles ─────────────────────────────────── */
+.simulated-alert-pulse-marker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pulse-ring {
+  border: 3px solid #EF4444;
+  border-radius: 50%;
+  height: 40px;
+  width: 40px;
+  position: absolute;
+  animation: pulse-ring-anim 1.5s ease-out infinite;
+  opacity: 0;
+}
+.map-pulse-dot {
+  background: #111827;
+  border: 2px solid #EF4444;
+  border-radius: 50%;
+  height: 24px;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  z-index: 2;
+}
+@keyframes pulse-ring-anim {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.patrol-marker-normal {
+  background: #1e293b;
+  border: 2px solid #3B82F6;
+  border-radius: 50%;
+  height: 28px;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.patrol-marker-normal:hover {
+  transform: scale(1.15);
+}
+
+.patrol-marker-alerting {
+  background: #1e293b;
+  border: 2px solid #EF4444;
+  border-radius: 50%;
+  height: 32px;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+  cursor: pointer;
+  animation: patrol-alert-pulse 1s infinite alternate;
+}
+
+@keyframes patrol-alert-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+  100% { transform: scale(1.25); box-shadow: 0 0 16px rgba(239, 68, 68, 0.9); }
+}
+

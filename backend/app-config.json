@@ -1,0 +1,17 @@
+{
+  "command": "python run.py",
+  "stack": "python3.11",
+  "memory": 512,
+  "max_instances": 2,
+  "env_variables": {
+    "APP_ENV": "production"
+  },
+  "ignore": [
+    ".env",
+    "venv",
+    "__pycache__",
+    "*.pyc",
+    ".pytest_cache",
+    "scripts"
+  ]
+}

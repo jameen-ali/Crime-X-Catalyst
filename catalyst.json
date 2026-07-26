@@ -1,0 +1,22 @@
+{
+  "project": {
+    "project_name": "crime-x",
+    "project_id": "YOUR_CATALYST_PROJECT_ID",
+    "project_key": "YOUR_CATALYST_PROJECT_KEY",
+    "org_id": "YOUR_CATALYST_ORG_ID"
+  },
+  "web_client": [
+    {
+      "app_location": "frontend/dist",
+      "folder_name": "crime-x-frontend",
+      "build_command": "cd frontend && npm install && npm run build"
+    }
+  ],
+  "appsail": [
+    {
+      "app_location": "backend",
+      "folder_name": "crime-x-backend",
+      "stack": "python3.11"
+    }
+  ]
+}
