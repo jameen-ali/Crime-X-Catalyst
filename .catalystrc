@@ -1,0 +1,30 @@
+{
+  "defaults": {
+    "project": 1,
+    "env": 1
+  },
+  "actives": {
+    "project": 1,
+    "env": 1
+  },
+  "projects": [
+    {
+      "idx": 1,
+      "id": "52903000000017001",
+      "name": "Crime-X",
+      "domain": {
+        "id": "50044353609",
+        "name": "crime-x-60080125603.development"
+      },
+      "timezone": "Asia/Kolkata",
+      "env": [
+        {
+          "idx": 1,
+          "id": "60080125603",
+          "name": "Development",
+          "type": 3
+        }
+      ]
+    }
+  ]
+}

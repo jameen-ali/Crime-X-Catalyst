@@ -1,0 +1,9 @@
+{
+  "command": "python run.py",
+  "stack": "python_3_11",
+  "memory": 512,
+  "max_instances": 2,
+  "env_variables": {
+    "APP_ENV": "production"
+  }
+}

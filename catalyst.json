@@ -1,9 +1,7 @@
 {
   "project": {
-    "project_name": "crime-x",
-    "project_id": "YOUR_CATALYST_PROJECT_ID",
-    "project_key": "YOUR_CATALYST_PROJECT_KEY",
-    "org_id": "YOUR_CATALYST_ORG_ID"
+    "project_name": "Crime-X",
+    "project_id": "52903000000017001"
   },
   "web_client": [
     {
