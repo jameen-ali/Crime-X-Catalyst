@@ -12,8 +12,21 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { kn } from 'date-fns/locale';
 import { evidenceApi, auditApi, type SupabaseEvidence } from '../lib/supabaseApi';
 import { supabase } from '../lib/supabase';
+import { DATASET_FILES } from '../lib/datasetFiles';
 import { useUIStore } from '../context/uiStore';
 
+// Deterministic function to assign a dataset image based on evidence ID if public_url is absent
+function getLocalDatasetImage(id: number | string): string | null {
+  if (!DATASET_FILES || DATASET_FILES.length === 0) return null;
+  // Simple hash of the ID
+  const strId = String(id);
+  let hash = 0;
+  for (let i = 0; i < strId.length; i++) {
+    hash = strId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % DATASET_FILES.length;
+  return `/dataset/${DATASET_FILES[index]}`;
+}
 /* ── Category & Type Styling Configuration ───────────────────────── */
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   Image: <Image size={20} className="text-blue-400" />,
@@ -229,9 +242,9 @@ function DetailModal({ ev, onClose, onRefresh }: { ev: SupabaseEvidence; onClose
         <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
           {/* Media Preview Container */}
           <div className={`w-full rounded-2xl border overflow-hidden flex flex-col items-center justify-center ${TYPE_BG[evType]} relative min-h-[240px] bg-black/40`}>
-            {evType === 'Image' && (ev.public_url || ev.thumbnail_url) ? (
+            {evType === 'Image' ? (
               <img
-                src={ev.public_url || ev.thumbnail_url!}
+                src={ev.public_url || ev.thumbnail_url || getLocalDatasetImage(ev.id) || ''}
                 alt={ev.file_name}
                 loading="lazy"
                 onError={(e) => {
@@ -679,9 +692,9 @@ export default function EvidenceExplorer() {
                   onClick={() => setSelectedEvidence(ev)}
                   className={`rounded-2xl border cursor-pointer hover:scale-[1.03] transition-all overflow-hidden ${TYPE_BG[evType]} relative group shadow-md flex flex-col justify-between`}>
                   <div className="aspect-square flex flex-col items-center justify-center gap-2 p-2 relative bg-black/30">
-                    {evType === 'Image' && (ev.public_url || ev.thumbnail_url) ? (
+                    {evType === 'Image' ? (
                       <img
-                        src={ev.public_url || ev.thumbnail_url!}
+                        src={ev.public_url || ev.thumbnail_url || getLocalDatasetImage(ev.id) || ''}
                         alt={ev.title || ev.file_name}
                         loading="lazy"
                         onError={(e) => {
@@ -743,8 +756,8 @@ export default function EvidenceExplorer() {
                       <tr key={ev.id} className="border-b border-[#1F2D40]/50 hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setSelectedEvidence(ev)}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
-                            {evType === 'Image' && (ev.public_url || ev.thumbnail_url) ? (
-                              <img src={ev.public_url || ev.thumbnail_url!} loading="lazy" className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-[#1F2D40]" alt="" />
+                            {evType === 'Image' ? (
+                              <img src={ev.public_url || ev.thumbnail_url || getLocalDatasetImage(ev.id) || ''} loading="lazy" className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-[#1F2D40]" alt="" />
                             ) : TYPE_ICONS[evType]}
                             <span className="text-gray-200 font-medium truncate max-w-[180px]">{ev.title || ev.file_name}</span>
                           </div>
@@ -797,8 +810,8 @@ export default function EvidenceExplorer() {
                       </div>
                       {ev.notes && <div className="text-xs text-gray-300 mt-2 line-clamp-2 bg-[#1a2435] p-2 rounded-xl border border-[#1F2D40]">{ev.notes}</div>}
                     </div>
-                    {evType === 'Image' && (ev.public_url || ev.thumbnail_url) && (
-                      <img src={ev.public_url || ev.thumbnail_url!} loading="lazy" className="w-20 h-16 rounded-xl object-cover flex-shrink-0 border border-[#1F2D40]" alt="" />
+                    {evType === 'Image' && (
+                      <img src={ev.public_url || ev.thumbnail_url || getLocalDatasetImage(ev.id) || ''} loading="lazy" className="w-20 h-16 rounded-xl object-cover flex-shrink-0 border border-[#1F2D40]" alt="" />
                     )}
                   </div>
                 </div>

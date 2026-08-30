@@ -96,7 +96,10 @@ export default function LeafletMap({
     const map = mapInstance.current;
     if (!map || !mapReady) return;
 
-    import('leaflet').then(({ default: L }) => {
+    Promise.all([
+      import('leaflet'),
+      import('leaflet.heat').catch(() => null) // Ignore error if not found
+    ]).then(([{ default: L }]) => {
       if (!mapInstance.current) return;
 
       // Clear previous markers
@@ -106,55 +109,108 @@ export default function LeafletMap({
 
       if (mode === 'heatmap') {
         // ── HEATMAP MODE ────────────────────────────────────────────────────
+        
+        // 1. Create heat layer
+        const heatPoints = filteredFIRs
+          .filter(fir => Number(fir.latitude) && Number(fir.longitude))
+          .map(fir => {
+            const lat = Number(fir.latitude);
+            const lng = Number(fir.longitude);
+            let intensity = 0.5;
+            if (fir.severity === 'Critical') intensity = 1.0;
+            if (fir.severity === 'High') intensity = 0.8;
+            return [lat, lng, intensity] as [number, number, number];
+          });
+
+        if ((L as any).heatLayer && heatPoints.length > 0) {
+          const heat = (L as any).heatLayer(heatPoints, {
+            radius: 25,
+            blur: 15,
+            maxZoom: 14,
+            max: 1.0,
+            gradient: {
+              0.4: 'blue',
+              0.6: 'cyan',
+              0.7: 'lime',
+              0.8: 'yellow',
+              1.0: 'red'
+            }
+          }).addTo(map);
+          markersRef.current.push(heat);
+        } else {
+          // Fallback if heat plugin fails: blurred circles
+          heatPoints.forEach(([lat, lng, intensity]) => {
+             const fallback = L.circleMarker([lat, lng], {
+                radius: 20 * intensity,
+                fillColor: intensity > 0.8 ? 'red' : intensity > 0.5 ? 'orange' : 'blue',
+                color: 'transparent',
+                fillOpacity: 0.15
+             }).addTo(map);
+             markersRef.current.push(fallback);
+          });
+        }
+
+        // 2. Identify top 5 hotspots (using simple coordinate binning for demo)
+        const hotspotBins: Record<string, { lat: number, lng: number, count: number, cases: any[] }> = {};
         filteredFIRs.forEach(fir => {
           const lat = Number(fir.latitude);
           const lng = Number(fir.longitude);
-          if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+          if (!lat || !lng) return;
+          const key = `${lat.toFixed(1)},${lng.toFixed(1)}`;
+          if (!hotspotBins[key]) hotspotBins[key] = { lat, lng, count: 0, cases: [] };
+          hotspotBins[key].count++;
+          hotspotBins[key].cases.push(fir);
+        });
 
-          const color = SEVERITY_COLORS[fir.severity] ?? '#3B82F6';
-          const isCritical = fir.severity === 'Critical';
-          const isHigh = fir.severity === 'High';
+        const topHotspots = Object.values(hotspotBins)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
 
-          // Outer glow ring
-          const outer = L.circleMarker([lat, lng], {
-            radius: isCritical ? 26 : isHigh ? 18 : 12,
-            fillColor: color,
-            color: 'transparent',
-            fillOpacity: 0.18,
+        topHotspots.forEach((hs, idx) => {
+          // Find most frequent crime type
+          const counts: Record<string, number> = {};
+          hs.cases.forEach(c => {
+             const ct = c.crimeType || 'Unknown';
+             counts[ct] = (counts[ct] || 0) + 1;
           });
-
-          // Core dot
-          const inner = L.circleMarker([lat, lng], {
-            radius: isCritical ? 6 : 4,
-            fillColor: color,
+          const topCrime = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+          
+          const district = hs.cases[0].district || 'Unknown District';
+          
+          const marker = L.circleMarker([hs.lat, hs.lng], {
+            radius: 8,
+            fillColor: '#EF4444',
             color: '#ffffff',
-            weight: 1.5,
+            weight: 2,
             fillOpacity: 1,
+            className: 'hotspot-pulse'
           });
 
           const popup = `
-            <div style="background:#111827;border:1px solid #1F2D40;border-radius:12px;padding:12px;color:white;min-width:220px;font-family:sans-serif;">
-              <div style="font-weight:bold;font-size:12px;color:${color};">${fir.firNumber || 'FIR Details'}</div>
-              <div style="font-size:10px;color:#9CA3AF;margin:2px 0;">${fir.crimeType}</div>
-              <div style="font-size:10px;color:#E5E7EB;margin-top:4px;">📍 ${fir.location} · ${fir.district}</div>
-              <div style="font-size:10px;color:#9CA3AF;margin-top:2px;">Severity: <span style="font-weight:bold;color:${color};">${fir.severity}</span></div>
+            <div style="background:#111827;border:1px solid #1F2D40;border-radius:12px;padding:14px;color:white;min-width:240px;font-family:sans-serif;">
+              <div style="font-weight:bold;font-size:14px;color:#EF4444;display:flex;justify-content:space-between;">
+                <span>HOTSPOT #${idx+1}</span>
+                <span style="background:rgba(239,68,68,0.2);padding:2px 6px;border-radius:4px;font-size:10px;">${hs.count} FIRs</span>
+              </div>
+              <div style="font-size:11px;color:#9CA3AF;margin:6px 0 2px;">Primary Crime</div>
+              <div style="font-size:12px;color:#E5E7EB;font-weight:600;">${topCrime || 'Various'}</div>
+              <div style="font-size:11px;color:#9CA3AF;margin:6px 0 2px;">Location</div>
+              <div style="font-size:12px;color:#E5E7EB;">📍 ${district}</div>
             </div>`;
 
-          outer.bindPopup(popup).addTo(map);
-          inner.bindPopup(popup).addTo(map);
-          newMarkers.push(outer, inner);
+          marker.bindPopup(popup).addTo(map);
+          markersRef.current.push(marker);
         });
 
-        // Auto-fit map to show all plotted markers
-        if (newMarkers.length > 0 && mapInstance.current) {
+        // Auto-fit map to show all plotted points
+        if (heatPoints.length > 0 && mapInstance.current) {
           try {
-            const group = L.featureGroup(newMarkers);
-            const bounds = group.getBounds();
+            const bounds = L.latLngBounds(heatPoints.map(p => [p[0], p[1]]));
             if (bounds.isValid()) {
               mapInstance.current.fitBounds(bounds.pad(0.08), { maxZoom: 14, animate: false });
             }
           } catch {
-            // bounds calculation failed, leave map as-is
+            // bounds calculation failed
           }
         }
 

@@ -159,6 +159,19 @@ export const caseApi = {
     const { data, count, error } = await query;
     if (error) throw error;
 
+    const KARNATAKA_DISTRICT_BOUNDS: Record<string, { latMin: number; latMax: number; lngMin: number; lngMax: number }> = {
+      'Bengaluru Urban':  { latMin: 12.830, latMax: 13.140, lngMin: 77.450, lngMax: 77.750 },
+      'Bengaluru Rural':  { latMin: 13.080, latMax: 13.400, lngMin: 77.350, lngMax: 77.800 },
+      'Mysuru':           { latMin: 12.100, latMax: 12.500, lngMin: 76.350, lngMax: 76.900 },
+      'Belagavi':         { latMin: 15.550, latMax: 16.200, lngMin: 74.200, lngMax: 74.850 },
+      'Hubballi-Dharwad': { latMin: 15.250, latMax: 15.650, lngMin: 74.900, lngMax: 75.250 },
+      'Mangaluru':        { latMin: 12.700, latMax: 13.100, lngMin: 74.800, lngMax: 75.300 },
+      'Kalaburagi':       { latMin: 17.000, latMax: 17.600, lngMin: 76.450, lngMax: 77.150 },
+      'Shivamogga':       { latMin: 13.700, latMax: 14.200, lngMin: 75.200, lngMax: 75.850 },
+      'Tumakuru':         { latMin: 13.150, latMax: 13.800, lngMin: 76.600, lngMax: 77.300 },
+      'Davangere':        { latMin: 14.250, latMax: 14.700, lngMin: 75.650, lngMax: 76.150 },
+    };
+
     // Derive severity from crime type keywords + deterministic fallback for variety
     const deriveSeverity = (c: any): 'Critical' | 'High' | 'Medium' | 'Low' => {
       const crimeGroup = (c.crime_head?.crime_group_name ?? '').toLowerCase();
@@ -195,18 +208,27 @@ export const caseApi = {
       return buckets[headId % 4];
     };
 
-    // Bangalore-area bbox fallback for cases without coordinates
-    const bangaloreBbox = { latMin: 12.83, latMax: 13.18, lngMin: 77.42, lngMax: 77.78 };
-    const randomBangaloreLat = () => bangaloreBbox.latMin + Math.random() * (bangaloreBbox.latMax - bangaloreBbox.latMin);
-    const randomBangaloreLng = () => bangaloreBbox.lngMin + Math.random() * (bangaloreBbox.lngMax - bangaloreBbox.lngMin);
+    // Deterministic fallback using a hash of the UUID or ID to distribute points evenly within a district
+    const hashStr = (s: string) => { let h=0; for(let i=0;i<s.length;i++) h=Math.imul(31,h)+s.charCodeAt(i)|0; return h; };
 
     // Map to FIR interface format
     const items = (data ?? []).map((c: any) => {
       const rawLat = Number(c.latitude);
       const rawLng = Number(c.longitude);
-      // Use DB coords if valid (not 0, not null), otherwise scatter within Bangalore
-      const lat = (rawLat && rawLat !== 0) ? rawLat : randomBangaloreLat();
-      const lng = (rawLng && rawLng !== 0) ? rawLng : randomBangaloreLng();
+      const districtName = c.unit?.district?.district_name || 'Bengaluru Urban';
+      const bounds = KARNATAKA_DISTRICT_BOUNDS[districtName] || KARNATAKA_DISTRICT_BOUNDS['Bengaluru Urban'];
+      
+      const hash = hashStr(String(c.case_master_id));
+      const normalizedLat = Math.abs(hash % 1000) / 1000;
+      const normalizedLng = Math.abs((hash / 1000 | 0) % 1000) / 1000;
+      
+      const fallbackLat = bounds.latMin + normalizedLat * (bounds.latMax - bounds.latMin);
+      const fallbackLng = bounds.lngMin + normalizedLng * (bounds.lngMax - bounds.lngMin);
+
+      // Use DB coords if valid (not 0, not null), otherwise use district fallback
+      const lat = (rawLat && rawLat !== 0) ? rawLat : fallbackLat;
+      const lng = (rawLng && rawLng !== 0) ? rawLng : fallbackLng;
+
       return {
         id: String(c.case_master_id),
         firNumber: c.case_no ?? c.crime_no,
@@ -554,6 +576,19 @@ export interface SupabaseEvidence {
 }
 
 export function normalizeEvidenceRecord(e: any): SupabaseEvidence {
+  // Map real DB column names to expected interface fields
+  // Real schema: evidence_id, case_master_id, file_name, description, type, created_at
+  const normalized = {
+    ...e,
+    id: e.id || e.evidence_id || String(Math.random()),
+    uploaded_at: e.uploaded_at || e.created_at || new Date().toISOString(),
+    evidence_type: e.evidence_type || e.type || undefined,
+    mime_type: e.mime_type || (e.file_name?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? 'image/jpeg' :
+                               e.file_name?.match(/\.(mp4|avi|mov)$/i) ? 'video/mp4' :
+                               e.file_name?.match(/\.(mp3|wav)$/i) ? 'audio/mp3' :
+                               e.file_name?.match(/\.(pdf)$/i) ? 'application/pdf' : 'image/jpeg'),
+  };
+
   let meta: any = {};
   if (e.ai_analysis) {
     try {
@@ -563,10 +598,10 @@ export function normalizeEvidenceRecord(e: any): SupabaseEvidence {
     } catch {}
   }
 
-  const mime = e.mime_type || 'image/png';
-  const name = e.file_name || 'evidence.png';
+  const mime = normalized.mime_type || 'image/png';
+  const name = normalized.file_name || 'evidence.png';
 
-  let evidenceType = e.evidence_type || meta.evidence_type;
+  let evidenceType = normalized.evidence_type || meta.evidence_type;
   if (!evidenceType) {
     if (mime.startsWith('image/')) evidenceType = 'Image';
     else if (mime.startsWith('video/')) evidenceType = 'Video';
@@ -575,7 +610,7 @@ export function normalizeEvidenceRecord(e: any): SupabaseEvidence {
     else evidenceType = 'Image';
   }
 
-  let category = e.category || meta.category;
+  let category = normalized.category || meta.category;
   if (!category) {
     const lower = name.toLowerCase();
     if (lower.includes('cctv') || lower.includes('still') || lower.startsWith('b')) category = 'CCTV';
@@ -588,21 +623,21 @@ export function normalizeEvidenceRecord(e: any): SupabaseEvidence {
     else category = 'Crime Scene';
   }
 
-  const title = e.title || meta.title || `${category} Evidence - ${name.replace(/[-_]/g, ' ')}`;
-  const crimeType = e.crime_type || meta.crime_type || e.case_master?.crime_head?.crime_group_name || 'Burglary';
-  const district = e.district || meta.district || e.case_master?.unit?.district?.district_name || 'Bengaluru City';
-  const linkedFir = e.linked_fir || meta.linked_fir || e.case_master?.case_no || e.case_master?.crime_no || 'FIR-2024-001';
-  const officer = e.officer || meta.officer || e.employee?.first_name || 'Insp. Ramesh Gowda';
-  const status = e.status || meta.status || 'Secured';
-  const location = e.location || meta.location || 'MG Road, Bengaluru';
-  const notes = e.notes || meta.notes || e.description || 'Verified evidence stored in Supabase Vault.';
-  const lat = e.latitude ?? meta.latitude ?? 12.9716;
-  const lng = e.longitude ?? meta.longitude ?? 77.5946;
-  const thumbUrl = e.thumbnail_url || meta.thumbnail_url || e.public_url;
-  const capturedDate = e.captured_date || meta.captured_date || e.uploaded_at || new Date().toISOString();
+  const title = normalized.title || meta.title || `${category} Evidence - ${name.replace(/[-_]/g, ' ')}`;
+  const crimeType = normalized.crime_type || meta.crime_type || normalized.case_master?.crime_head?.crime_group_name || 'Burglary';
+  const district = normalized.district || meta.district || normalized.case_master?.unit?.district?.district_name || 'Bengaluru City';
+  const linkedFir = normalized.linked_fir || meta.linked_fir || normalized.case_master?.case_no || normalized.case_master?.crime_no || 'FIR-2024-001';
+  const officer = normalized.officer || meta.officer || normalized.employee?.first_name || 'Insp. Ramesh Gowda';
+  const status = normalized.status || meta.status || 'Secured';
+  const location = normalized.location || meta.location || 'MG Road, Bengaluru';
+  const notes = normalized.notes || meta.notes || normalized.description || 'Verified evidence stored in Supabase Vault.';
+  const lat = normalized.latitude ?? meta.latitude ?? 12.9716;
+  const lng = normalized.longitude ?? meta.longitude ?? 77.5946;
+  const thumbUrl = normalized.thumbnail_url || meta.thumbnail_url || normalized.public_url;
+  const capturedDate = normalized.captured_date || meta.captured_date || normalized.uploaded_at || new Date().toISOString();
 
   return {
-    ...e,
+    ...normalized,
     title,
     category,
     crime_type: crimeType,
@@ -620,7 +655,7 @@ export function normalizeEvidenceRecord(e: any): SupabaseEvidence {
     notes,
     latitude: Number(lat),
     longitude: Number(lng),
-    tags: e.tags || [category.toLowerCase(), evidenceType.toLowerCase(), district.toLowerCase()],
+    tags: normalized.tags || [category.toLowerCase(), evidenceType.toLowerCase(), district.toLowerCase()],
   };
 }
 
@@ -657,28 +692,42 @@ export const evidenceApi = {
     page?: number;
     pageSize?: number;
   }): Promise<{ data: SupabaseEvidence[]; total: number }> {
+    // Use only columns that actually exist in the evidence table
+    // Real schema: evidence_id, case_master_id, file_name, description, type, created_at
     let query = supabase
       .from('evidence')
       .select(`
         *,
-        employee!evidence_uploaded_by_fkey(first_name),
-        case_master!evidence_case_master_id_fkey(
-          case_no, crime_no,
-          crime_head!case_master_crime_major_head_id_fkey(crime_group_name)
+        case_master(
+          case_no, crime_no
         )
       `, { count: 'exact' })
-      .order('uploaded_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (filters?.caseId) query = query.eq('case_master_id', filters.caseId);
-    if (filters?.mimeType) query = query.ilike('mime_type', `${filters.mimeType}%`);
 
     const page = filters?.page ?? 1;
     const pageSize = filters?.pageSize ?? 40;
     const from = (page - 1) * pageSize;
     query = query.range(from, from + pageSize - 1);
 
-    const { data, count, error } = await query;
-    if (error) throw error;
+    let data: any[] = [];
+    let count: number | null = 0;
+    try {
+      const result = await query;
+      if (result.error) throw result.error;
+      data = result.data ?? [];
+      count = result.count;
+    } catch (e: any) {
+      // Fallback: query without join if join fails
+      const fallback = await supabase
+        .from('evidence')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1);
+      data = fallback.data ?? [];
+      count = fallback.count;
+    }
 
     const deletedIds = getDeletedEvidenceIds();
     let items: SupabaseEvidence[] = (data ?? [])
@@ -736,8 +785,7 @@ export const evidenceApi = {
       .from('evidence')
       .select(`
         *,
-        employee!evidence_uploaded_by_fkey(first_name),
-        case_master!evidence_case_master_id_fkey(case_no, crime_no)
+        case_master(case_no, crime_no)
       `)
       .order('uploaded_at', { ascending: false })
       .limit(limit);

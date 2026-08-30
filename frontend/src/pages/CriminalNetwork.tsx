@@ -259,19 +259,32 @@ export default function CriminalNetwork() {
 
     if (cyInst.current) { cyInst.current.destroy(); cyInst.current = null; }
 
+    // Calculate node degree (centrality) for dynamic sizing
+    const degrees: Record<string, number> = {};
+    data.nodes.forEach(n => degrees[n.id] = 0);
+    data.edges.forEach(e => {
+      if (degrees[e.source] !== undefined) degrees[e.source]++;
+      if (degrees[e.target] !== undefined) degrees[e.target]++;
+    });
+
     const cy = cytoscape({
       container: cyRef.current,
       elements: [
-        ...data.nodes.map(n => ({
-          data: {
-            id:     n.id,
-            label:  n.label.length > 16 ? n.label.slice(0, 15) + '…' : n.label,
-            type:   n.type,
-            color:  NODE_COLORS[n.type] ?? '#6B7280',
-            size:   n.type === 'Person' ? 42 : n.type === 'Case' ? 38 : 32,
-            _node:  n,
-          }
-        })),
+        ...data.nodes.map(n => {
+          const degree = degrees[n.id] || 0;
+          // Base size + bonus for being highly connected
+          const size = (n.type === 'Person' ? 42 : n.type === 'Case' ? 38 : 32) + (degree * 3);
+          return {
+            data: {
+              id:     n.id,
+              label:  n.label.length > 16 ? n.label.slice(0, 15) + '…' : n.label,
+              type:   n.type,
+              color:  NODE_COLORS[n.type] ?? '#6B7280',
+              size:   Math.min(size, 90), // Cap size to avoid massive nodes
+              _node:  n,
+            }
+          };
+        }),
         ...data.edges.map(e => ({
           data: { id: e.id, source: e.source, target: e.target, label: e.label }
         })),
@@ -331,17 +344,17 @@ export default function CriminalNetwork() {
       ],
       layout: {
         name: 'cose',
-        idealEdgeLength: () => 100,
+        idealEdgeLength: () => 80,
         nodeOverlap: 20,
         refresh: 20,
         fit: true,
         padding: 40,
-        randomize: false,
-        componentSpacing: 100,
-        nodeRepulsion: () => 400000,
-        edgeElasticity: () => 100,
+        randomize: true,
+        componentSpacing: 60,
+        nodeRepulsion: () => 300000,
+        edgeElasticity: () => 150,
         nestingFactor: 5,
-        gravity: 80,
+        gravity: 120, // Increase gravity to pull nodes closer and reduce empty space
         numIter: 1000,
         initialTemp: 200,
         coolingFactor: 0.95,
@@ -355,10 +368,21 @@ export default function CriminalNetwork() {
       setSelectedNode(nodeData);
       setNeighborNodes(neighbors);
 
-      // Visual feedback
-      cy.elements().addClass('dimmed');
+      // Visual feedback: dim all, highlight target and neighborhood
+      cy.elements().addClass('dimmed').removeClass('highlighted');
       evt.target.removeClass('dimmed').addClass('highlighted');
       evt.target.neighborhood().removeClass('dimmed');
+      
+      // Highlight connected edges
+      evt.target.connectedEdges().removeClass('dimmed').addClass('highlighted');
+    });
+
+    cy.on('tap', (evt) => {
+      // Click on background removes selection
+      if (evt.target === cy) {
+        setSelectedNode(null);
+        cy.elements().removeClass('dimmed highlighted');
+      }
     });
 
     cyInst.current = cy;
