@@ -2,5 +2,8 @@
   "devDependencies": {
     "@supabase/supabase-js": "^2.110.8",
     "@types/node": "^26.1.1"
+  },
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build"
   }
 }
