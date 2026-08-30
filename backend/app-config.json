@@ -1,6 +1,7 @@
 {
   "command": "python3 run.py",
-  "stack": "python3_11",
+  "stack": "python_3_11",
+  "build_path": ".",
   "memory": 512,
   "max_instances": 2,
   "env_variables": {

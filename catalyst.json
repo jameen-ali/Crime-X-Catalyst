@@ -5,16 +5,15 @@
   },
   "web_client": [
     {
-      "app_location": "frontend/dist",
-      "folder_name": "crime-x-frontend",
-      "build_command": "cd frontend && npm install && npm run build"
+      "app_location": "client",
+      "folder_name": "crime-x-frontend"
     }
   ],
   "appsail": [
     {
-      "app_location": "backend",
-      "folder_name": "crime-x-backend",
-      "stack": "python3.11"
+      "source": "backend",
+      "name": "crime-x-backend",
+      "stack": "python_3_11"
     }
   ]
 }

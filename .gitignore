@@ -18,6 +18,7 @@ frontend/dist-ssr/
 frontend/.env
 frontend/.env.*
 *.local
+client/
 
 # ── Logs ─────────────────────────────────────────────────────────────────────
 logs/
