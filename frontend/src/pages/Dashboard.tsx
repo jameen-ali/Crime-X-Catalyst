@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -12,10 +12,10 @@ import {
 } from 'recharts';
 import { formatDistanceToNow } from 'date-fns';
 import { kn } from 'date-fns/locale';
-import { kpiApi, caseApi, evidenceApi } from '../lib/supabaseApi';
+import { backendAnalyticsApi } from '../lib/backendApi';
+import { caseApi } from '../lib/supabaseApi';
 import { KPICard, KPICardSkeleton, GlassCard, StatusBadge, SkeletonPanel } from '../components/ui';
 import { useUIStore } from '../context/uiStore';
-import { supabase } from '../lib/supabase';
 
 const CHART_COLORS = ['#3B82F6', '#10B981', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
 
@@ -53,72 +53,62 @@ const STATUS_LABEL_KN: Record<number, string> = {
 export default function Dashboard() {
   const { language } = useUIStore();
   const isKn = language === 'kn';
-  const [realtimeConnected, setRealtimeConnected] = useState(true);
+  const [realtimeConnected, setRealtimeConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     let active = true;
     const checkConnection = async () => {
       try {
-        const { error } = await supabase.from('case_master').select('case_master_id').limit(1);
-        if (active) setRealtimeConnected(!error);
+        await backendAnalyticsApi.getKPIs();
+        if (active) setRealtimeConnected(true);
       } catch {
         if (active) setRealtimeConnected(false);
       }
     };
     checkConnection();
-    const interval = setInterval(checkConnection, 10000);
+    const interval = setInterval(checkConnection, 30000);
     return () => {
       active = false;
       clearInterval(interval);
     };
   }, []);
 
-  // ── Live Supabase queries ────────────────────────────────────────────────
-  const { data: kpis, isLoading: kpisLoading } = useQuery({
-    queryKey: ['supabase-kpis'],
-    queryFn: () => kpiApi.getKPIs(),
+  // ── Live backend queries (backend uses service key → bypasses RLS) ─────────
+  const { data: kpis, isLoading: kpisLoading, error: kpisError } = useQuery({
+    queryKey: ['backend-kpis'],
+    queryFn: () => backendAnalyticsApi.getKPIs(),
     staleTime: 1000 * 60 * 2,
+    retry: 2,
   });
 
   const { data: recentCases, isLoading: casesLoading } = useQuery({
-    queryKey: ['supabase-recent-cases'],
-    queryFn: () => caseApi.getRecentCases(8),
+    queryKey: ['backend-activity-feed'],
+    queryFn: () => backendAnalyticsApi.getActivityFeed(),
     staleTime: 1000 * 60 * 2,
   });
 
   const { data: trend, isLoading: trendLoading } = useQuery({
-    queryKey: ['supabase-crime-trend'],
-    queryFn: () => caseApi.getCrimeTrend(),
+    queryKey: ['backend-crime-trend'],
+    queryFn: () => backendAnalyticsApi.getCrimeTrend(),
     staleTime: 1000 * 60 * 5,
   });
 
   const { data: distribution } = useQuery({
-    queryKey: ['supabase-crime-dist'],
-    queryFn: () => caseApi.getCrimeDistribution(),
+    queryKey: ['backend-crime-dist'],
+    queryFn: () => backendAnalyticsApi.getCrimeDistribution(),
     staleTime: 1000 * 60 * 5,
   });
 
-  // ── Activity feed (from real cases) ──────────────────────────────────────
-  const [activityIdx, setActivityIdx] = useState(0);
-  const activityRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const activityItems = buildActivityFromCases(recentCases ?? [], isKn);
+  // ── Activity feed (from backend) ──────────────────────────────────────────
+  const activityItems = (recentCases ?? []) as any[];
 
-  useEffect(() => {
-    if (activityItems.length > 0) {
-      activityRef.current = setInterval(() => {
-        setActivityIdx(i => (i + 1) % Math.max(activityItems.length - 3, 1));
-      }, 2500);
-    }
-    return () => clearInterval(activityRef.current!);
-  }, [activityItems.length]);
-
-  const visibleActivity = activityItems.slice(activityIdx, activityIdx + 5);
-
+  // ── Recent Evidence ───────────────────────────────────────────────────────
   const { data: recentEvidence } = useQuery({
-    queryKey: ['evidence-recent'],
-    queryFn: () => evidenceApi.getRecent(10),
-    staleTime: 60000,
+    queryKey: ['backend-recent-evidence'],
+    queryFn: () => backendAnalyticsApi.getRecentEvidence(),
+    staleTime: 1000 * 60 * 5,
   });
+
 
   return (
     <div className="space-y-6">
@@ -154,6 +144,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {kpisLoading ? (
           Array.from({ length: 8 }).map((_, i) => <KPICardSkeleton key={i} />)
+        ) : kpisError ? (
+          <div className="col-span-full p-4 text-sm text-red-400 bg-red-500/10 rounded-xl border border-red-500/20">
+            Failed to load KPI statistics from the backend.
+          </div>
         ) : kpis && (
           <>
             <KPICard title={isKn ? 'ಒಟ್ಟು ಪ್ರಕರಣಗಳು' : 'Total Cases'} value={kpis.totalCases} icon={FileText} color="blue" change={8} delay={0} />
@@ -264,7 +258,7 @@ export default function Dashboard() {
             padding={false}
           >
             <div className="p-3 space-y-1 min-h-[160px]">
-              {casesLoading ? <SkeletonPanel rows={4} /> : visibleActivity.map((item, i) => (
+              {casesLoading ? <SkeletonPanel rows={4} /> : activityItems.map((item, i) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, x: -8 }}

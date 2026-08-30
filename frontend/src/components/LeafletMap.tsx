@@ -52,9 +52,9 @@ export default function LeafletMap({
       const map = L.map(mapRef.current, { center: initCenter, zoom: initZoom });
 
       const tileUrl = theme === 'light'
-        ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-      const tileLayer = L.tileLayer(tileUrl, { attribution: '© CARTO' });
+        ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'; // Fallback to OSM for dark as well due to Carto deprecation
+      const tileLayer = L.tileLayer(tileUrl, { attribution: '© OpenStreetMap contributors' });
       tileLayer.addTo(map);
 
       map.on('click', (e: any) => onMapClick(e.latlng.lat, e.latlng.lng));
@@ -86,8 +86,8 @@ export default function LeafletMap({
   useEffect(() => {
     if (!tileLayerRef.current) return;
     const url = theme === 'light'
-      ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
     tileLayerRef.current.setUrl(url);
   }, [theme]);
 

@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { backendChatApi } from '../lib/backendApi';
 import type { FIR, Alert, ChatMessage, AuditLog } from '../types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -832,7 +833,7 @@ export const evidenceApi = {
       }
     } catch {}
 
-    const finalUrl = publicUrl || dataUrl || `https://ewzifvudriauuydrgiax.supabase.co/storage/v1/object/public/evidence-files/${storagePath}`;
+    const finalUrl = publicUrl || dataUrl || `https://orxcmpvzxqfbdtcmkupo.supabase.co/storage/v1/object/public/evidence-files/${storagePath}`;
     const thumbUrl = dataUrl || finalUrl;
 
     const evidenceType = file.type.startsWith('image/') ? 'Image'
@@ -1695,27 +1696,19 @@ export const searchApi = {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 2000);
 
-      const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer 6x6votIVrBlcuWRWEbKSXmBJefRlnpKf"
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: "open-mistral-7b",
-          response_format: { type: "json_object" },
-          messages: [
-            { role: 'system', content: 'You are a KSP Crime Analyst. Output JSON format: {"predictionParagraph": "string", "recommendations": ["string", "string"]}' },
-            { role: 'user', content: `Compare Case A (${firA}: ${caseA.brief_facts}) and Case B (${firB}: ${caseB.brief_facts}).` }
-          ],
-          temperature: 0.2
-        })
+      const response = await backendChatApi.proxyMistral({
+        model: "open-mistral-7b",
+        response_format: { type: "json_object" },
+        messages: [
+          { role: 'system', content: 'You are a KSP Crime Analyst. Output JSON format: {"predictionParagraph": "string", "recommendations": ["string", "string"]}' },
+          { role: 'user', content: `Compare Case A (${firA}: ${caseA.brief_facts}) and Case B (${firB}: ${caseB.brief_facts}).` }
+        ],
+        temperature: 0.2
       });
       clearTimeout(timer);
 
-      if (response.ok) {
-        const json = await response.json();
+      if (response && response.choices && response.choices.length > 0) {
+        const json = response;
         const parsed = JSON.parse(json.choices?.[0]?.message?.content || '{}');
         if (parsed.predictionParagraph) {
           return {
@@ -2229,38 +2222,25 @@ ${retrievedContext}`;
         { role: 'user', content }
       ];
 
-      const mistralKey = (import.meta.env.VITE_MISTRAL_API_KEY as string) || "6x6votIVrBlcuWRWEbKSXmBJefRlnpKf";
-
-      if (!mistralKey || mistralKey.trim() === "" || mistralKey.startsWith("your_")) {
-        replyText = generateSmartFallback(content, dbContextParts);
-      } else {
-        try {
-          const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${mistralKey}`
-            },
-            body: JSON.stringify({
-              model: "open-mistral-7b",
-              messages: apiMessages,
-              max_tokens: 600,
-              temperature: 0.2
-            })
-          });
-
-          if (response.status === 401 || response.status === 403) {
-            replyText = generateSmartFallback(content, dbContextParts);
-          } else if (!response.ok) {
-            throw new Error(`Mistral returned status ${response.status}`);
-          } else {
-            const resJson = await response.json();
-            replyText = resJson.choices?.[0]?.message?.content || generateSmartFallback(content, dbContextParts);
-          }
-        } catch (err) {
-          console.error("Mistral error:", err);
-          replyText = generateSmartFallback(content, dbContextParts);
+      // Fallback is required if no Mistral configuration is found
+      let useFallback = true;
+      try {
+        const response = await backendChatApi.proxyMistral({
+          model: "open-mistral-7b",
+          messages: apiMessages,
+          max_tokens: 600,
+          temperature: 0.2
+        });
+        if (response && response.choices) {
+          replyText = response.choices[0]?.message?.content || generateSmartFallback(content, dbContextParts);
+          useFallback = false;
         }
+      } catch (err) {
+        console.error("Mistral backend proxy error:", err);
+      }
+      
+      if (useFallback) {
+        replyText = generateSmartFallback(content, dbContextParts);
       }
     }
 

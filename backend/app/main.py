@@ -1,6 +1,6 @@
-"""
+﻿"""
 Crime X Intelligence Dashboard -- FastAPI Backend
-Mirrors the mock API contract from frontend/src/mockApi/
+Real Supabase-backed API. Secrets stay on server.
 """
 
 import os
@@ -14,16 +14,27 @@ from app.routers import firs, analytics, network, predictions, alerts, evidence,
 
 load_dotenv()
 
-# Ensure UTF-8 output on Windows so logging never crashes on non-ASCII
+# Ensure UTF-8 output on Windows
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+# CORS: split comma-separated list, strip whitespace
+raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173")
+CORS_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[Crime X] API starting up...")
+    print(f"[Crime X] CORS allowed origins: {CORS_ORIGINS}")
+    # Warm up Supabase connection on startup
+    try:
+        from app.db.supabase_client import get_supabase
+        db = get_supabase()
+        db.table("case_master").select("case_master_id").limit(1).execute()
+        print("[Crime X] Supabase connection OK.")
+    except Exception as e:
+        print(f"[Crime X] WARNING: Supabase connection failed on startup: {e}")
     yield
     print("[Crime X] API shutting down.")
 
@@ -31,7 +42,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Crime X Intelligence API",
     description="Karnataka State Police Intelligence Dashboard Backend",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -43,7 +54,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Routers ──────────────────────────────────────────────────────────────────
+# ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(firs.router,         prefix="/api/firs",        tags=["FIRs"])
 app.include_router(analytics.router,    prefix="/api/analytics",   tags=["Analytics"])
 app.include_router(network.router,      prefix="/api/network",     tags=["Criminal Network"])
@@ -59,4 +70,4 @@ app.include_router(chat.router,         prefix="/api/chat",        tags=["AI Cha
 
 @app.get("/", tags=["Root"])
 async def root():
-    return {"message": "Crime X API is running", "docs": "/docs"}
+    return {"message": "Crime X API is running", "version": "2.0.0", "docs": "/docs"}

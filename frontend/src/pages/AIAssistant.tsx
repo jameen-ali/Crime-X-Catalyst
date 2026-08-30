@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Mic, Upload, Download, Share2, ChevronRight, CheckCircle, Volume2, VolumeX, FileText, UserPlus, Copy, Trash2, Bot } from 'lucide-react';
-import { chatApi, auditApi } from '../lib/supabaseApi';
+import { backendChatApi } from '../lib/backendApi';
+import { auditApi } from '../lib/supabaseApi';
 import { useAuthStore } from '../context/authStore';
 import { useUIStore } from '../context/uiStore';
 import type { ChatMessage } from '../types';
@@ -178,7 +179,7 @@ export default function AIAssistant() {
           targetId = storedId!;
         } else {
           // Fall back: check DB for latest real conversation
-          const list = await chatApi.getConversations();
+          const list = await backendChatApi.getConversations();
           setConversations(list);
           if (list.length > 0 && isValidUUID(list[0].id)) {
             targetId = list[0].id;
@@ -209,7 +210,7 @@ export default function AIAssistant() {
     
     const fetchHistory = async () => {
       try {
-        const history = await chatApi.getHistory(activeConvId);
+        const history = await backendChatApi.getHistory(activeConvId);
         if (isMounted) {
           if (history.length === 0) {
             // Seed a welcome message
@@ -235,7 +236,7 @@ export default function AIAssistant() {
     fetchHistory();
 
     // Subscribe to realtime updates for this conversation
-    const unsubscribe = chatApi.subscribeToConversation(activeConvId, () => {
+    const unsubscribe = backendChatApi.subscribeToConversation(activeConvId, () => {
       fetchHistory();
     });
 
@@ -270,11 +271,11 @@ export default function AIAssistant() {
     try {
       // Send to backend; the API will stream/store the assistant reply.
       // The realtime subscription will fire fetchHistory once the reply is saved.
-      await chatApi.sendMessage(activeConvId, contentStr, user?.id);
+      await backendChatApi.sendMessage(activeConvId, contentStr, user?.id);
 
       // Fetch the latest messages once to get the assistant reply
       // (covers cases where realtime subscription may not fire in time)
-      const history = await chatApi.getHistory(activeConvId);
+      const history = await backendChatApi.getHistory(activeConvId);
       if (history && history.length > 0) {
         setMessages(history);
       }
@@ -357,7 +358,7 @@ export default function AIAssistant() {
   const handleClearHistory = async () => {
     if (!activeConvId) return;
     try {
-      await chatApi.clearHistory(activeConvId);
+      await backendChatApi.clearHistory(activeConvId);
 
       // Generate a real UUID so it never collides with the old conv
       const newConvId = crypto.randomUUID();
@@ -405,7 +406,7 @@ export default function AIAssistant() {
       // Create a metadata entry for file upload
 
       try {
-        await chatApi.sendMessage(activeConvId, `[Uploaded File: ${file.name}]`, user?.id);
+        await backendChatApi.sendMessage(activeConvId, `[Uploaded File: ${file.name}]`, user?.id);
         showToast(isKn ? 'ದಾಖಲೆ ಅಪ್‌ಲೋಡ್ ಯಶಸ್ವಿ' : 'File uploaded and logged successfully');
       } catch (err) {
         console.error(err);

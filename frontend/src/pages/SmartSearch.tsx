@@ -6,8 +6,9 @@ import {
   Activity, Paperclip, GitFork, Clock, Download, History, AlertTriangle
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { backendSearchApi } from '../lib/backendApi';
 import {
-  searchApi, caseApi, auditApi,
+  caseApi, auditApi,
   getSearchHistory, removeSearchHistory, clearSearchHistory
 } from '../lib/supabaseApi';
 import { supabase } from '../lib/supabase';
@@ -470,7 +471,7 @@ export default function SmartSearch() {
   // Main search query against Supabase PostgreSQL
   const { data: results, isLoading, isError, error } = useQuery({
     queryKey: ['smart-search-query', debouncedQ, districtFilter, statusFilter, sortBy],
-    queryFn: () => searchApi.search(debouncedQ, {
+    queryFn: () => backendSearchApi.search(debouncedQ, {
       district: districtFilter,
       status: statusFilter,
       sortBy,
@@ -482,7 +483,7 @@ export default function SmartSearch() {
   // Search auto-complete suggestions query
   const { data: suggestions = [] } = useQuery({
     queryKey: ['search-suggestions', query],
-    queryFn: () => searchApi.getSuggestions(query),
+    queryFn: () => backendSearchApi.getSuggestions(query),
     enabled: query.trim().length >= 2 && showSuggestions,
   });
 
